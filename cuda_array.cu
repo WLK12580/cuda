@@ -1,44 +1,40 @@
-#include<cuda_runtime.h>
-#include<device_launch_parameters.h>
-#include<iostream>
-#include<array>
-#include<stdio.h>
-__global__ void kernel_func(int *arr3,const int *arr1,const int *arr2){
-    printf(" hello GPU\n");
-    const unsigned int thread_idx=threadIdx.x;
-    arr3[thread_idx]=arr1[thread_idx]*arr2[thread_idx];
-    printf("arr1=%d",arr1[thread_idx]);
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
+#include <stdio.h>
+
+#include <array>
+#include <iostream>
+__global__ void kernel_func(int *arr13, int *arr11, int *arr12) {
+  int idx = threadIdx.x;
+  arr13[idx] = arr11[idx] * arr12[idx];
 }
-int main(){
-    int *arr1[101];
-    int *arr2[101];
-    int *arr3[101];
-    int *arr12[101];
-    int *arr11[101];
-    int *arr13[101];
-    std::cout<<"test01"<<std::endl;
-    for(int i=0;i<101;i++){
-        std::cout<<"i="<<i<<std::endl;
-    }
-    std::cout<<"test02"<<std::endl;
-    cudaMalloc((void**)&arr3,sizeof(int)*101);
-    cudaMalloc((void**)&arr1,sizeof(int)*101);
-    cudaMalloc((void**)&arr2,sizeof(int)*101);
-    
-    cudaMemcpy(arr1,arr11,101*sizeof(int),cudaMemcpyHostToDevice);
-    cudaMemcpy(arr2,arr12,101*sizeof(int),cudaMemcpyHostToDevice);
-    kernel_func<<<1,100>>>(*arr3,*arr1,*arr2);
-    cudaMemcpy(arr13,arr3,101*sizeof(int),cudaMemcpyDeviceToHost);
+int main() {
+  int arr1[3] = {1, 3, 5};
+  int arr2[3] = {2, 4, 6};
+  int arr3[3];
+  int *arr11 = nullptr; //device变量
+  int *arr12 = nullptr;
+  int *arr13 = nullptr;
+  cudaMalloc((void **)&arr13, sizeof(int) * 3); //给设备变量分配内存
+  cudaMalloc((void **)&arr11, sizeof(int) * 3);
+  cudaMalloc((void **)&arr12, sizeof(int) * 3);
+  cudaMemcpy(arr11, arr1, sizeof(int) * 3, cudaMemcpyHostToDevice); //从主机复制数据到GPU
+  cudaMemcpy(arr12, arr2, sizeof(int) * 3, cudaMemcpyHostToDevice);
+  cudaMemcpy(arr13, arr3, sizeof(int) * 3, cudaMemcpyHostToDevice);
+  kernel_func<<<1, 3>>>(arr13, arr11, arr12);
 
-    cudaFree(arr1);
-    cudaFree(arr2);
-    cudaFree(arr3);
-    cudaDeviceReset();
-    for(int i=0;i<sizeof(arr13)/sizeof(int);i++){
-        std::cout<<" arr["<<i<<"]="<<arr13[i];
-    }
-    std::cout<<std::endl;
-
+  cudaError_t  cudaStatus = cudaMemcpy(arr3, arr13, 3 * sizeof(int), cudaMemcpyDeviceToHost); //将计算结果返回到主机
+  if(cudaStatus != cudaSuccess){
+    std::cout<<"error\n";
     return 0;
+  }
+  for (int i = 0; i < 3; i++) {
+    printf("arr13=%d\n", arr3[i]);
+  }
+  cudaFree(arr1);
+  cudaFree(arr2);
+  cudaFree(arr3);
+  cudaDeviceReset();
+  std::cout << std::endl;
+  return 0;
 }
-
